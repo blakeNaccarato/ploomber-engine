@@ -46,7 +46,7 @@ class PloomberMemoryProfilerClient(PloomberClient):
 @telemetry.log_call("memory-profile")
 def memory_profile(path, output):
     path = Path(path)
-    target = path.with_name(path.stem + "-memory-usage.png")
+    target = path.with_name(f"{path.stem}-memory-usage.png")
 
     client = PloomberMemoryProfilerClient.from_path(path)
 

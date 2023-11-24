@@ -70,7 +70,8 @@ class build_py(build_py_orig):
             (pkg, mod, file)
             for (pkg, mod, file) in modules
             if not any(
-                fnmatch.fnmatchcase(pkg + "." + mod, pat=pattern) for pattern in exclude
+                fnmatch.fnmatchcase(f"{pkg}.{mod}", pat=pattern)
+                for pattern in exclude
             )
         ]
 

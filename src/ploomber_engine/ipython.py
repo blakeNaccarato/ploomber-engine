@@ -38,36 +38,31 @@ def _make_stream_output(out, name):
 
 
 def _process_stdout(out, result):
-    if not result.success:
-        exception = out[-2]
-        # ignore newlines
-        out = out[:-2:2]
-
-        cells = []
-
-        if out:
-            cells.append(
-                nbformat.v4.new_output(
-                    output_type="stream", text="\n".join(out), name="stdout"
-                )
-            )
-
-        cells.append(
-            nbformat.v4.new_output(
-                "error",
-                ename=type(result.error_in_exec).__name__,
-                evalue=str(result.error_in_exec),
-                traceback=exception.splitlines(),
-            )
-        )
-        return cells
-
-    else:
+    if result.success:
         return [
             nbformat.v4.new_output(
                 output_type="stream", text="".join(out), name="stdout"
             )
         ]
+    exception = out[-2]
+    cells = []
+
+    if out := out[:-2:2]:
+        cells.append(
+            nbformat.v4.new_output(
+                output_type="stream", text="\n".join(out), name="stdout"
+            )
+        )
+
+    cells.append(
+        nbformat.v4.new_output(
+            "error",
+            ename=type(result.error_in_exec).__name__,
+            evalue=str(result.error_in_exec),
+            traceback=exception.splitlines(),
+        )
+    )
+    return cells
 
 
 class CustomDisplayHook(DisplayHook):
@@ -117,11 +112,8 @@ class PloomberShell(InteractiveShell):
         InteractiveShell._instance = self
         PloomberShell._instance = self
 
-        try:
+        with contextlib.suppress(ModuleNotFoundError):
             self.enable_matplotlib("inline")
-        except ModuleNotFoundError:
-            pass
-
         # all channels send the output here
         self._current_output = []
 
@@ -166,8 +158,7 @@ class PloomberShell(InteractiveShell):
         # this will never be in the user's namespace because we're declaring it here
         nonmatching = object()
 
-        # get all the variables the user created in their notebook
-        out = [
+        return [
             i
             # for every variable in the user namespace
             for i in user_ns
@@ -176,7 +167,6 @@ class PloomberShell(InteractiveShell):
             # and ignore the variable if it's in the hidden namespace
             and (user_ns[i] is not user_ns_hidden.get(i, nonmatching))
         ]
-        return out
 
     def delete_interactive_variables(self):
         """delete all the variables defined by the user within the Interactive shell"""
@@ -192,12 +182,11 @@ def _remove_cells_with_tags(nb, tags):
     if isinstance(tags, str):
         tags = {tags}
 
-    cells_ = []
-
-    for cell in nb.cells:
-        if not (set(tags) & set(cell.metadata.get("tags", set()))):
-            cells_.append(cell)
-
+    cells_ = [
+        cell
+        for cell in nb.cells
+        if not (set(tags) & set(cell.metadata.get("tags", set())))
+    ]
     nb.cells = cells_
 
     return nb
@@ -327,10 +316,7 @@ class PloomberClient:
         # the progress bar
         var = os.environ.get("_PLOOMBER_ENGINE_PROGRESS_BAR")
 
-        if var is not None:
-            self._progress_bar = var == "true"
-        else:
-            self._progress_bar = progress_bar
+        self._progress_bar = var == "true" if var is not None else progress_bar
 
     @classmethod
     def from_path(
@@ -417,10 +403,6 @@ class PloomberClient:
         output = []
 
         if stdout:
-            if self._display_stdout:
-                pass
-                # print("".join([line for line in stdout]),end='')
-
             output.extend(_process_stdout(stdout, result=result))
 
         if stderr:
@@ -435,7 +417,7 @@ class PloomberClient:
             if current["output_type"] == "execute_result":
                 current["execution_count"] = execution_count
 
-        output = output + out
+        output += out
 
         # add outputs to the cell object
         cell.outputs = output
@@ -630,11 +612,10 @@ class PloomberClient:
 
     def __enter__(self):
         """Initialize shell"""
-        if self._shell is None:
-            self._shell = PloomberShell()
-            return self
-        else:
+        if self._shell is not None:
             raise RuntimeError("A shell is already active")
+        self._shell = PloomberShell()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Clear shell"""

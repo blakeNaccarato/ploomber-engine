@@ -24,7 +24,7 @@ class Translator(object):
     @classmethod
     def translate_raw_str(cls, val):
         """Reusable by most interpreters"""
-        return "{}".format(val)
+        return f"{val}"
 
     @classmethod
     def translate_escaped_str(cls, str_val):
@@ -34,7 +34,7 @@ class Translator(object):
             if sys.version_info >= (3, 0):
                 str_val = str_val.decode("utf-8")
             str_val = str_val.replace('"', r"\"")
-        return '"{}"'.format(str_val)
+        return f'"{str_val}"'
 
     @classmethod
     def translate_str(cls, val):
@@ -63,15 +63,11 @@ class Translator(object):
 
     @classmethod
     def translate_dict(cls, val):
-        raise NotImplementedError(
-            "dict type translation not implemented for {}".format(cls)
-        )
+        raise NotImplementedError(f"dict type translation not implemented for {cls}")
 
     @classmethod
     def translate_list(cls, val):
-        raise NotImplementedError(
-            "list type translation not implemented for {}".format(cls)
-        )
+        raise NotImplementedError(f"list type translation not implemented for {cls}")
 
     @classmethod
     def translate(cls, val):
@@ -96,19 +92,17 @@ class Translator(object):
 
     @classmethod
     def comment(cls, cmt_str):
-        raise NotImplementedError(
-            "comment translation not implemented for {}".format(cls)
-        )
+        raise NotImplementedError(f"comment translation not implemented for {cls}")
 
     @classmethod
     def assign(cls, name, str_val):
-        return "{} = {}".format(name, str_val)
+        return f"{name} = {str_val}"
 
     @classmethod
     def codify(cls, parameters, comment="Parameters"):
-        content = "{}\n".format(cls.comment(comment))
+        content = f"{cls.comment(comment)}\n"
         for name, val in parameters.items():
-            content += "{}\n".format(cls.assign(name, cls.translate(val)))
+            content += f"{cls.assign(name, cls.translate(val))}\n"
         return content
 
     @classmethod
@@ -129,7 +123,7 @@ class Translator(object):
             A list of all parameters
         """
         raise NotImplementedError(
-            "parameters introspection not implemented for {}".format(cls)
+            f"parameters introspection not implemented for {cls}"
         )
 
 
@@ -158,21 +152,18 @@ class PythonTranslator(Translator):
     @classmethod
     def translate_dict(cls, val):
         escaped = ", ".join(
-            [
-                "{}: {}".format(cls.translate_str(k), cls.translate(v))
-                for k, v in val.items()
-            ]
+            [f"{cls.translate_str(k)}: {cls.translate(v)}" for k, v in val.items()]
         )
         return "{{{}}}".format(escaped)
 
     @classmethod
     def translate_list(cls, val):
         escaped = ", ".join([cls.translate(v) for v in val])
-        return "[{}]".format(escaped)
+        return f"[{escaped}]"
 
     @classmethod
     def comment(cls, cmt_str):
-        return "# {}".format(cmt_str).strip()
+        return f"# {cmt_str}".strip()
 
     @classmethod
     def codify(cls, parameters, comment="Parameters"):

@@ -30,7 +30,7 @@ DELTA_TIME = [t1 - t0 for t0, t1 in zip(TIMESTAMP_START, TIMESTAMP_END)]
 @pytest.fixture
 def cells():
     sleep = "time.sleep(2)"
-    cells = [
+    return [
         "import numpy as np; import time",  # i=1
         sleep,  # i=2
         "x = np.ones(131072, dtype='float64')",  # i=3
@@ -38,7 +38,6 @@ def cells():
         "y = np.ones(131072*10, dtype='float64')",  # i=5
         sleep,  # i=6
     ]
-    return cells
 
 
 @pytest.fixture
@@ -50,21 +49,19 @@ def nb(cells):
 
 @pytest.fixture
 def nb_metadata(cells):
-    cells_with_metadata = []
-
-    for ind, cell in enumerate(cells):
-        cells_with_metadata.append(
-            nbformat.v4.new_code_cell(
-                cell,
-                metadata={
-                    "ploomber": {
-                        "memory_usage": MEMORY_USAGE[ind],
-                        "timestamp_start": TIMESTAMP_START[ind],
-                        "timestamp_end": TIMESTAMP_END[ind],
-                    }
-                },
-            )
+    cells_with_metadata = [
+        nbformat.v4.new_code_cell(
+            cell,
+            metadata={
+                "ploomber": {
+                    "memory_usage": MEMORY_USAGE[ind],
+                    "timestamp_start": TIMESTAMP_START[ind],
+                    "timestamp_end": TIMESTAMP_END[ind],
+                }
+            },
         )
+        for ind, cell in enumerate(cells)
+    ]
     nb.cells = cells_with_metadata
     return nb
 

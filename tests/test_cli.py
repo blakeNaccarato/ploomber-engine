@@ -26,7 +26,7 @@ def _make_call(**kwargs):
         save_profiling_data=False,
     )
 
-    return call("nb.ipynb", "out.ipynb", **{**defaults, **kwargs})
+    return call("nb.ipynb", "out.ipynb", **defaults | kwargs)
 
 
 @pytest.mark.parametrize(

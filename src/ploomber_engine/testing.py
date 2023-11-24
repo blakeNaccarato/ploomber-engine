@@ -16,17 +16,9 @@ def _process_output(output):
     if output["output_type"] == "stream":
         return output["text"].strip()
     elif output["output_type"] == "execute_result":
-        text_plain = output["data"].get("text/plain")
-
-        if text_plain:
-            if "[<matplotlib." in text_plain:
-                return None
-            else:
-                return text_plain.strip()
-
-        image_png = output["data"].get("image/png")
-
-        if image_png:
+        if text_plain := output["data"].get("text/plain"):
+            return None if "[<matplotlib." in text_plain else text_plain.strip()
+        if image_png := output["data"].get("image/png"):
             warnings.warn("Image found, it will be ignore...")
             return None
 

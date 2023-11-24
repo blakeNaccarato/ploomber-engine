@@ -37,11 +37,10 @@ def extract_name(source):
 
     if len(names) == 1:
         return list(names)[0]
-    else:
-        try:
-            return _get_function_name(mod)
-        except Exception:
-            return None
+    try:
+        return _get_function_name(mod)
+    except Exception:
+        return None
 
 
 def _get_function_name(mod):
@@ -88,19 +87,11 @@ class PloomberLogger(PloomberClient):
                     execution_count += 1
 
                     if cell["outputs"]:
-                        out = _process_content_data(
+                        if out := _process_content_data(
                             cell["outputs"][-1], counter=None, idx=None
-                        )
-
-                        if out:
-                            name = extract_name(cell.source)
-
-                            if name:
-                                if out[0] == "text/plain":
-                                    val = _safe_literal_eval(out[1])
-                                else:
-                                    val = out[1]
-
+                        ):
+                            if name := extract_name(cell.source):
+                                val = _safe_literal_eval(out[1]) if out[0] == "text/plain" else out[1]
                                 parameters[name] = val
 
         tracker.upsert(uuid_, parameters)

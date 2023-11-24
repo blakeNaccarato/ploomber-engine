@@ -112,7 +112,7 @@ def test_execute_notebook_profile_runtime(cells, tmp_empty):
     assert Path("out-runtime.png")
     assert Image(filename="out-runtime.png")
 
-    custom_path = str(Path(tmp_empty + "/new_dir/custom.png"))
+    custom_path = str(Path(f"{tmp_empty}/new_dir/custom.png"))
     execute_notebook(nb_in, "out.ipynb", profile_runtime=custom_path)
     assert Path(custom_path).is_file()
 
@@ -267,12 +267,7 @@ def test_execute_notebook_save_profiling_data(
     assert Path(outfile).is_file()
     with open(outfile, "r") as f:
         read_lines = f.readlines()
-        lines = []
-        # In case of Windows there are
-        # extra '\n' characters, so skipping those
-        for line in read_lines:
-            if line.strip():
-                lines.append(line)
+        lines = [line for line in read_lines if line.strip()]
         assert len(lines) == 2, "File should have 2 lines"
         data = lines[1].strip().split(",")
         assert len(data) == 3, "File should have 3 columns"
@@ -288,71 +283,45 @@ def test_execute_notebook_save_profiling_data(
     outfile = save_profiling_output
     with open(outfile, "r") as f:
         read_lines = f.readlines()
-        lines = []
-        # In case of Windows there are
-        # extra '\n' characters, so skipping those
-        for line in read_lines:
-            if line.strip():
-                lines.append(line)
+        lines = [line for line in read_lines if line.strip()]
         assert len(lines) == 2, "File should have 2 lines"
         data = lines[1].strip().split(",")
         assert len(data) == 3, "File should have 3 columns"
         assert data[2] != "NA", "memory is profiled and should not be NA"
 
 
-@pytest.mark.parametrize(
-    "saved_path, exception_msg, exception_type",
-    [
-        (
+@pytest.mark.parametrize("saved_path, exception_msg, exception_type", [(
             "abc",
             "Invalid save_profiling_data(.*), path must end with .csv",
             ValueError,
-        ),
-        (
+        ), (
             "./abc",
             "Invalid save_profiling_data(.*), path must end with .csv",
             ValueError,
-        ),
-        (
+        ), (
             "./abc.py",
             "Invalid save_profiling_data(.*), path must end with .csv",
             ValueError,
-        ),
-        (
+        ), (
             "./abc.txt",
             "Invalid save_profiling_data(.*), path must end with .csv",
             ValueError,
-        ),
-        (
+        ), (
             "./abc.png",
             "Invalid save_profiling_data(.*), path must end with .csv",
             ValueError,
-        ),
-        (
+        ), (
             "./abc",
             "Invalid save_profiling_data(.*), path must end with .csv",
             ValueError,
-        ),
-        (
-            float(123.0),
-            "Invalid save_profiling_data(.*). "
-            "Please provide either a boolean or a string",
-            ValueError,
-        ),
-        (
+        ), (123.0, "Invalid save_profiling_data(.*). "
+            "Please provide either a boolean or a string", ValueError), (
             {"test": "test123"},
             "Invalid save_profiling_data(.*). "
             "Please provide either a boolean or a string",
             ValueError,
-        ),
-        (
-            set(["test", "test123"]),
-            "Invalid save_profiling_data(.*). "
-            "Please provide either a boolean or a string",
-            ValueError,
-        ),
-    ],
-)
+        ), ({"test", "test123"}, "Invalid save_profiling_data(.*). "
+            "Please provide either a boolean or a string", ValueError)])
 def test_execute_notebook_invalid_save_profiling_data(
     saved_path, exception_msg, exception_type
 ):

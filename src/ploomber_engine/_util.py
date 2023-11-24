@@ -45,9 +45,7 @@ def find_cell_with_tag(nb, tag):
     Find a cell with a given tag, returns a cell, index tuple. Otherwise
     (None, None)
     """
-    out = find_cell_with_tags(nb, [tag])
-
-    if out:
+    if out := find_cell_with_tags(nb, [tag]):
         located = out[tag]
         return located["cell"], located["index"]
     else:
@@ -60,13 +58,15 @@ def find_cell_with_parameters_comment(nb):
     matchinf the criteria, it returns a (cell, index) tuple, otherwise, it returns
     (None, None)
     """
-    for idx, cell in enumerate(nb["cells"]):
-        if re.match(r"\s*#\s*PARAMETERS?\s*", cell["source"]) or re.match(
-            r"\s*#\s*parameters?\s*", cell["source"]
-        ):
-            return cell, idx
-
-    return None, None
+    return next(
+        (
+            (cell, idx)
+            for idx, cell in enumerate(nb["cells"])
+            if re.match(r"\s*#\s*PARAMETERS?\s*", cell["source"])
+            or re.match(r"\s*#\s*parameters?\s*", cell["source"])
+        ),
+        (None, None),
+    )
 
 
 def parametrize_notebook(nb, parameters):
@@ -84,7 +84,7 @@ def parametrize_notebook(nb, parameters):
         idx_to_inject = idx_params + 1
     elif idx_params is None and idx_comment is not None:
         idx_to_inject = idx_comment + 1
-    elif idx_params is not None and idx_comment is not None:
+    elif idx_params is not None:
         idx_to_inject = max(idx_params, idx_comment) + 1
     else:
         idx_to_inject = 0

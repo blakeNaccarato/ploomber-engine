@@ -145,7 +145,7 @@ def execute_notebook(
     ...                        remove_tagged_cells=["remove", "also-remove"])
     """
     path_like_input = isinstance(input_path, (str, Path))
-    if save_profiling_data and not (profile_runtime or profile_memory):
+    if save_profiling_data and not profile_runtime and not profile_memory:
         warnings.warn(
             "save_profiling_data=True requires "
             "profile_runtime=True or profile_memory=True",

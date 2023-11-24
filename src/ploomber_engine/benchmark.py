@@ -82,7 +82,7 @@ def benchmark_notebooks_in_directory(path_to_notebooks):
     import pandas as pd
 
     results = []
-    notebooks = [nb for nb in Path(path_to_notebooks).glob("*.ipynb")]
+    notebooks = list(Path(path_to_notebooks).glob("*.ipynb"))
 
     for path in notebooks:
         try:

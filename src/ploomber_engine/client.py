@@ -53,8 +53,7 @@ class PloomberNotebookClient(NotebookClient):
             )  # type:ignore
         except Exception as e:
             self.log.error(
-                "Error occurred while starting new kernel client "
-                "for kernel {}: {}".format(self.km.kernel_id, str(e))
+                f"Error occurred while starting new kernel client for kernel {self.km.kernel_id}: {str(e)}"
             )
             await self._async_cleanup_kernel()
             raise
@@ -251,21 +250,28 @@ def flush_io(client):
         _pending_clearoutput = True
 
         # do we need to handle this?
-        if msg_type == "status":
-            pass
-        elif msg_type == "stream":
-            if sub_msg["content"]["name"] == "stdout":
-                if _pending_clearoutput:
-                    print("\r", end="")
-                    _pending_clearoutput = False
-                print(sub_msg["content"]["text"], end="")
-                sys.stdout.flush()
-            elif sub_msg["content"]["name"] == "stderr":
-                if _pending_clearoutput:
-                    print("\r", file=sys.stderr, end="")
-                    _pending_clearoutput = False
-                print(sub_msg["content"]["text"], file=sys.stderr, end="")
-                sys.stderr.flush()
+        if msg_type == "clear_output":
+            if sub_msg["content"]["wait"]:
+                _pending_clearoutput = True
+            else:
+                print("\r", end="")
+
+        elif msg_type == "error":
+            for frame in sub_msg["content"]["traceback"]:
+                print(frame, file=sys.stderr)
+
+        elif msg_type == "execute_input":
+            content = sub_msg["content"]
+
+            # New line
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+
+            # With `Remote In [3]: `
+            # self.print_remote_prompt(ec=ec)
+
+            # And the code
+            sys.stdout.write(content["code"] + "\n")
 
         elif msg_type == "execute_result":
             if _pending_clearoutput:
@@ -288,29 +294,16 @@ def flush_io(client):
                 print()
             print(text_repr)
 
-        elif msg_type == "display_data":
-            pass
-
-        # If execute input: print it
-        elif msg_type == "execute_input":
-            content = sub_msg["content"]
-
-            # New line
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-
-            # With `Remote In [3]: `
-            # self.print_remote_prompt(ec=ec)
-
-            # And the code
-            sys.stdout.write(content["code"] + "\n")
-
-        elif msg_type == "clear_output":
-            if sub_msg["content"]["wait"]:
-                _pending_clearoutput = True
-            else:
-                print("\r", end="")
-
-        elif msg_type == "error":
-            for frame in sub_msg["content"]["traceback"]:
-                print(frame, file=sys.stderr)
+        elif msg_type == "stream":
+            if sub_msg["content"]["name"] == "stdout":
+                if _pending_clearoutput:
+                    print("\r", end="")
+                    _pending_clearoutput = False
+                print(sub_msg["content"]["text"], end="")
+                sys.stdout.flush()
+            elif sub_msg["content"]["name"] == "stderr":
+                if _pending_clearoutput:
+                    print("\r", file=sys.stderr, end="")
+                    _pending_clearoutput = False
+                print(sub_msg["content"]["text"], file=sys.stderr, end="")
+                sys.stderr.flush()
